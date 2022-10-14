@@ -1,0 +1,11 @@
+para.h
+
+It has c++ macros
+#define MAX_FANOUT 4
+#define KeyType int
+
+every occurance in the program will be replaced by this
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+is_leaf
+
