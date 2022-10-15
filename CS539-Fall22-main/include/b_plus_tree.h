@@ -64,7 +64,9 @@ public:
 
 class BPlusTree {
  public:
-  BPlusTree(){};
+  BPlusTree(){
+  	root = NULL;
+  };
 
   // Returns true if this B+ tree has no keys and values
   bool IsEmpty() const;

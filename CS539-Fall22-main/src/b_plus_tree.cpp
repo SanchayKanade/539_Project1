@@ -3,7 +3,12 @@
 /*
  * Helper function to decide whether current b+tree is empty
  */
-bool BPlusTree::IsEmpty() const { return true; }
+bool BPlusTree::IsEmpty() const { 
+	if(!root || root ==NULL){
+		return true;
+	}
+	return false; 
+}
 
 /*****************************************************************************
  * SEARCH
@@ -24,7 +29,14 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) { return fal
  * @return: since we only support unique key, if user try to insert duplicate
  * keys return false, otherwise return true.
  */
-bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) { return false; }
+bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) { 
+
+
+
+
+
+	return false; 
+}
 
 /*****************************************************************************
  * REMOVE
