@@ -27,7 +27,7 @@ int main() {
   }
 
   bool test1_success = true;
-  for (int i = 100; i < 500; i++) {
+  for (int i = 100; i < 101; i++) {
     RecordPointer one_record(i, i);
     if (!tree.Insert(i, one_record)) {
       test1_success = false;
@@ -39,9 +39,10 @@ int main() {
   }
 
   bool test2_success = true;
-  for (int i = 100; i < 500; i++) {
+  for (int i = 100; i < 101; i++) {
     RecordPointer one_record;
     tree.GetValue(i, one_record);
+    cout<<"One record "<<one_record.page_id<<"\n";
     if (one_record.page_id != i) {
       test2_success = false;
     }
