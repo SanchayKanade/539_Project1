@@ -83,7 +83,13 @@ class BPlusTree {
   // return the values within a key range [key_start, key_end) not included key_end
   void RangeScan(const KeyType &key_start, const KeyType &key_end,
                  std::vector<RecordPointer> &result);
+  
+  //Helper functions
+  // Copy leaf keys from split point to internal nodes. Helps building tree from leaf nodes
+  void FillInternal(const KeyType &key, InternalNode *parent, InternalNode *newLeaf);
 
+  //Helps in finding parent of a given node
+  InternalNode* FindParent(Node *root, InternalNode *cursor);
  private:
   // pointer to the root node.
   Node *root;
