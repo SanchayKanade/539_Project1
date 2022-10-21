@@ -90,6 +90,9 @@ class BPlusTree {
 
   //Helps in finding parent of a given node
   InternalNode* FindParent(Node *root, InternalNode *cursor);
+
+  //Helps in deleting internal node and balancing tree
+  void DeleteInternal(const KeyType &key, InternalNode *parent, InternalNode *child);
  private:
   // pointer to the root node.
   Node *root;

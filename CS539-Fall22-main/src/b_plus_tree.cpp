@@ -345,7 +345,278 @@ InternalNode* BPlusTree::FindParent(Node *root, InternalNode *cursor){
  * delete entry from leaf node. Remember to deal with redistribute or merge if
  * necessary.
  */
-void BPlusTree::Remove(const KeyType &key) {}
+void BPlusTree::Remove(const KeyType &key) {
+	RecordPointer one_record;
+	//If tree is empty
+	if(IsEmpty()){
+		return;
+	}
+	//If the given key is not present
+	else if(!IsEmpty() && !GetValue(key, one_record)){
+		return;
+	}
+	//If the key is present
+	else{
+		InternalNode *cursor = (InternalNode*) root;
+		InternalNode *parent;
+		KeyType leftSib, rightSib;  //declaring left and right siblings
+		//Implementing search logic
+		while(cursor->is_leaf == false){
+			for(int i =0; i<cursor->key_num; i++){
+				parent = cursor;
+				leftSib = i-1;
+				rightSib = i+1;
+				if(key<cursor->keys[i]){
+					cursor = (InternalNode*)cursor->children[i];
+					break;
+				}
+				if(i == cursor->key_num-1){
+					leftSib = i;
+					rightSib = i+2;
+					cursor = (InternalNode*)cursor->children[i+1];
+					break;
+				}
+			}
+		}
+		//we have reached leaf
+		LeafNode* cursorl = (LeafNode*)cursor;
+		//Find the position for the key in that node
+		bool found = false;
+		int pos;
+		//Find position of search key in the keys of leaf node
+		for(pos=0; pos<cursorl->key_num; pos++){
+			if(cursorl->keys[pos] == key){
+				found = true;
+				break;
+			}
+		}
+		for(int i=pos; i<cursorl->key_num; i++){
+			cursorl->keys[i] = cursorl->keys[i+1];
+			cursorl->pointers[i] = cursorl->pointers[i+1];
+		}
+		cursorl->key_num--;
+		if(cursorl == (LeafNode*)root){
+			//for(int i=0; i<MAX_FANOUT;i++){
+			//	cursor->children[i] = NULL;
+			//}
+			//No nodes left in the tree after removal
+			if(cursorl->key_num == 0){
+				delete[] cursorl->keys;
+				delete[] cursorl->pointers;
+				delete cursorl;
+				root = NULL;
+			}
+			return;
+		}
+		//This is the normal case.
+		//cursorl->prev_leaf = cursor->children[cursor->key_num+1];
+		//cursor->children[cursor->key_num] = NULL;
+		if(cursorl->key_num >= (MAX_FANOUT)/2){
+				return; //becasue half the keys should be full
+		}
+		if(leftSib >= 0){
+			LeafNode *leftNode = (LeafNode*)parent->children[leftSib]; //this is a pointer to the left left node of cursorl. could be optimized
+			if(leftNode->key_num >= (MAX_FANOUT)/2 + 1){
+				for(int i=cursorl->key_num; i>0; i--){
+					cursorl->keys[i] = cursorl->keys[i-1]; //copying key to right
+					cursorl->pointers[i] = cursorl->pointers[i-1];
+				}
+				cursorl->key_num++;
+				//cursorl->children[cursor->key_num] = cursor->children[cursor->key_num - 1];
+				//cursorl->children[cursor->key_num -1] = NULL;
+				//Pushing greatest value of left sibling
+				cursorl->keys[0] = leftNode->keys[leftNode->key_num -1];
+				leftNode->key_num--;
+				leftNode->next_leaf = cursorl;
+				//leftNode->children[leftNode->key_num + 1] = NULL;
+				parent->keys[leftSib] = cursorl->keys[0];
+				return;
+			}
+		}
+		if(rightSib <= parent->key_num){
+			LeafNode *rightNode = (LeafNode*)parent->children[rightSib];
+			if(rightNode->key_num >= (MAX_FANOUT)/2 + 1){
+				cursorl->key_num++;
+				cursorl->keys[cursorl->key_num-1] = rightNode->keys[0];
+				cursorl->pointers[cursor->key_num-1] = rightNode->pointers[0];
+				rightNode->key_num--;
+				rightNode->prev_leaf = cursorl;
+				//pointer condition
+				for(int i = 0;i<rightNode->key_num; i++){
+					rightNode->keys[i] = rightNode->keys[i+1];
+				}
+				parent->keys[rightSib-1] = rightNode->keys[0];
+				return;
+			}
+
+			
+		}
+		if(leftSib >=0){
+			LeafNode *leftNode = (LeafNode*)parent->children[leftSib];
+			for(int i = leftNode->key_num, j=0; j< cursorl->key_num; i++,j++){
+				leftNode->keys[i] = cursorl->keys[j];
+				leftNode->pointers[i] = cursorl->pointers[j];
+			}
+			leftNode->key_num += cursorl->key_num;
+			leftNode->next_leaf = cursorl;
+			DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
+			delete[] cursorl->keys;
+			delete[] cursorl->pointers;
+			delete cursor;
+		}
+		else if(rightSib<=parent->key_num){
+			LeafNode *rightNode = (LeafNode*)parent->children[rightSib];
+			for(int i = cursorl->key_num, j=0; j<rightNode->key_num; i++,j++){
+				cursorl->keys[i] = rightNode->keys[j];
+				cursorl->pointers[i] = rightNode->pointers[j];
+			}
+			cursorl->key_num += rightNode->key_num;
+			cursorl->next_leaf = rightNode;
+			DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
+			delete [] rightNode->keys;
+			delete [] rightNode->pointers;
+			delete rightNode;	
+		}
+
+	}
+}
+/*****************************************************************************
+ * DELETE INTERNAL
+ *****************************************************************************/
+/*Deletes internal nodes
+* Author : Sanchay Kanade (sk2656)
+* Date Created : 10/20/2022*/
+/***************************************************************************/
+void BPlusTree::DeleteInternal(const KeyType &key, InternalNode *parent, InternalNode *child){
+	//start here
+	if(parent == (InternalNode*)root){
+		if(parent->key_num ==1){
+			if(parent->children[1] ==child){
+				delete[] child->keys;
+				delete[] child->children;
+				delete child;
+				root = (Node*)parent->children[0];
+				delete[] parent->keys;
+				delete[] parent->children;
+				delete parent;
+				return;
+			}
+			else if(parent->children[0]==child){
+				delete[] child->keys;
+				delete[] child->children;
+				delete child;
+				root = (Node*)parent->children[1];
+				delete[] parent->keys;
+				delete[] parent->children;
+				delete parent;
+				return;
+				
+			}
+		}
+	}
+	int pos;
+	for(pos =0; pos<parent->key_num;pos++){
+		if(parent->keys[pos] == key){
+			break;
+		}
+	}
+	for(int i = pos; i<parent->key_num; i++){
+		parent->keys[i] = parent->keys[i+1];
+	}
+	for(pos = 0; pos<parent->key_num+1; pos++){
+		if(parent->children[pos]==child){
+			break;
+		}
+		
+	}
+	for(int i=pos; i<parent->key_num+1;i++){
+		parent->children[i] = parent->children[i+1];
+	}
+	parent->key_num--;
+	if(parent->key_num >= (MAX_FANOUT)/2 - 1){
+		return;
+	}
+	if(parent == (InternalNode*)root){
+		return;
+	}
+	InternalNode *parentN = FindParent(root, parent);
+	int leftSib, rightSib;
+	for(pos=0; pos<parentN->key_num+1; pos++){
+		if(parentN->children[pos] == parent){
+			leftSib = pos-1;
+			rightSib = pos+1;
+			break;
+		}
+	}
+	if(leftSib>=0){
+		InternalNode* leftNode = (InternalNode*)parentN->children[leftSib];
+		if(leftNode->key_num >=(MAX_FANOUT)/2){
+			for(int i=parent->key_num;i>0;i--){
+				parent->keys[i] = parent->keys[i-1];
+			}
+			parent->keys[0] = parentN->keys[leftSib];
+			parentN->keys[leftSib] = leftNode->keys[leftNode->key_num - 1];
+			for (int i = parent->key_num + 1; i > 0; i--) {
+				parent->children[i] = parent->children[i - 1];
+			}
+			parent->children[0] = leftNode->children[leftNode->key_num];
+			parent->key_num++;
+			leftNode->key_num--;
+			return;
+		}
+	}
+	if(rightSib <=parentN->key_num){
+		InternalNode *rightNode = (InternalNode*)parentN->children[rightSib];
+		if(rightNode->key_num >=(MAX_FANOUT)/2){
+			parent->keys[parent->key_num] = parentN->keys[pos];
+			parentN->keys[pos] = rightNode->keys[0];
+			for(int i =0;i<rightNode->key_num - 1;i++){
+				rightNode->keys[i] = rightNode->keys[i+1];
+			}
+			parent->children[parent->key_num + 1] = rightNode->children[0];
+			for(int i=0;i>rightNode->key_num;++i){
+				rightNode->children[i] = rightNode->children[i+1];
+			}
+			parent->key_num++;
+			rightNode->key_num--;
+			return;
+			
+		}	
+	}
+	if(leftSib>=0){
+		InternalNode* leftNode = (InternalNode*)parentN->children[leftSib];
+		leftNode->keys[leftNode->key_num] = parentN->keys[leftSib];
+	        for (int i = leftNode->key_num + 1, j = 0; j < parent->key_num; j++){
+	            leftNode->keys[i] = parent->keys[j];
+        	}
+        	for (int i = leftNode->key_num + 1, j = 0; j < parent->key_num + 1; j++){
+           		 leftNode->children[i] = parent->children[j];
+            		 parent->children[j] = NULL;
+        	}
+        	leftNode->key_num += parent->key_num + 1;
+        	parent->key_num = 0;
+        	DeleteInternal(parentN->keys[leftSib], parentN, parent);
+	}
+	else if(rightSib <= parentN->key_num){
+		InternalNode *rightNode = (InternalNode*)parentN->children[rightSib];
+		parent->keys[parent->key_num] = parentN->keys[rightSib - 1];
+		for (int i = parent->key_num + 1, j = 0; j < rightNode->key_num; j++){
+    		parent->keys[i] = rightNode->keys[j];
+		}
+		for (int i = parent->key_num + 1, j = 0; j < rightNode->key_num + 1; j++){
+		    parent->children[i] = rightNode->children[j];
+		    rightNode->children[j] = NULL;
+		}
+		parent->key_num += rightNode->key_num + 1;
+		rightNode->key_num = 0;
+		DeleteInternal(parentN->keys[rightSib - 1], parentN, rightNode);
+	}
+
+
+}
+
+
+
 
 /*****************************************************************************
  * RANGE_SCAN
