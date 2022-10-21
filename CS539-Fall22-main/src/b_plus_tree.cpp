@@ -153,7 +153,7 @@ if(GetValue(key, one_record)){
 		}
 		//Leaf node has no space left and the key lies between them
 		else{
-			LeafNode *newLeaf = new LeafNode;
+			LeafNode *newLeaf = new LeafNode();
 			KeyType tempNode[MAX_FANOUT]; //temp array to store keys from previous leaf
 			RecordPointer tempPtr[MAX_FANOUT]; //temp array to store values from previous leaf
 
@@ -163,11 +163,11 @@ if(GetValue(key, one_record)){
 				tempPtr[i] = cursorl->pointers[i];
 			}
 			int i=0, j;
-			while(key > tempNode[i] && i < MAX_FANOUT-1){  //finding the position for key
+			while(i < MAX_FANOUT-1 && key > tempNode[i]){  //finding the position for key
 				i++;	
 			}
 			//Shifting keys and records 
-			for(int j = MAX_FANOUT;j>i;j--){
+			for(int j = MAX_FANOUT-1;j>i;j--){ //segmentation fault fixed
 				tempNode[j] = tempNode[j-1];
 				tempPtr[j] = tempPtr[j-1];
 			}
@@ -192,18 +192,16 @@ if(GetValue(key, one_record)){
 			newLeaf->prev_leaf = cursorl;
 
 			//If cursor is the leaf and root node
-			InternalNode *cursorR = (InternalNode*)cursorl;
-			InternalNode *temp = (InternalNode*)root;
-			if(cursorR == temp){
-				InternalNode *newInternalNode = new InternalNode;
-				newInternalNode->keys[0] = newLeaf->keys[0];
-				newInternalNode->children[0] = cursor;
-				InternalNode *newLeaf = (InternalNode*)newLeaf;
-				newInternalNode->children[1] = newLeaf;
-				newInternalNode->is_leaf = false;
-				newInternalNode->key_num = 1;
-				Node *temp = (Node*)newInternalNode;
-				root = newInternalNode;
+			//Node *cursorR = (Node*)cursorl;
+			if(cursorl == root){
+				
+				InternalNode *newRoot = new InternalNode();
+				newRoot->keys[0] = newLeaf->keys[0];
+				newRoot->children[0] = cursorl;
+				newRoot->children[1] = newLeaf;
+				newRoot->is_leaf = false;
+				newRoot->key_num = 1;
+				root = newRoot;
 				
 			}
 			// If there are multiple internal nodes and leafs
@@ -246,7 +244,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		cursor->children[i+1] = (InternalNode*)newLeaf;
 	}
 	else{
-		InternalNode *internalNode = new InternalNode;
+		InternalNode *internalNode = new InternalNode();
 		KeyType tempKey[MAX_FANOUT]; //temp array to store keys of parent
 		InternalNode *tempPtr[MAX_FANOUT+1]; //temp array to store pointers of parents
 		for(int i=0; i<MAX_FANOUT-1;i++){
@@ -282,7 +280,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		if(cursor == (InternalNode*)root){
 			// if leaf is root node now we will copy leaf values to root
 			InternalNode *cursorR = (InternalNode*)cursor;
-                        InternalNode *newInternalNode = new InternalNode;
+                        InternalNode *newInternalNode = new InternalNode();
                         newInternalNode->keys[0] = newLeaf->keys[cursorR->key_num];
                         newInternalNode->children[0] = cursorR;
                         newInternalNode->children[1] = internalNode;
