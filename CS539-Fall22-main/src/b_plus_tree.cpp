@@ -270,10 +270,10 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		internalNode->is_leaf = false;
 		cursor->key_num = (MAX_FANOUT)/2; //creating split point
 		internalNode->key_num = MAX_FANOUT - 1 + (MAX_FANOUT)/2; 
-		for(i = 0, j = cursor->key_num+1; i<internalNode->key_num;i++, j++){
+		for(i = 0, j = cursor->key_num; i<internalNode->key_num;i++, j++){
 			internalNode->keys[i] = tempKey[j]; //populating internalNode->keys[i] = tempKeys[j] from split point
 		} 
-		for(i=0, j=cursor->key_num+1;i<internalNode->key_num+1;i++, j++){
+		for(i=0, j=cursor->key_num;i<internalNode->key_num+1;i++, j++){
 			internalNode->children[i]=(InternalNode*)tempPtr[j];
 		}
 
@@ -457,10 +457,10 @@ void BPlusTree::Remove(const KeyType &key) {
 			}
 			leftNode->key_num += cursorl->key_num;
 			leftNode->next_leaf = cursorl;
-			DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
+			/*DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
 			delete[] cursorl->keys;
 			delete[] cursorl->pointers;
-			delete cursor;
+			delete cursor;*/
 		}
 		else if(rightSib<=parent->key_num){
 			LeafNode *rightNode = (LeafNode*)parent->children[rightSib];
@@ -470,10 +470,10 @@ void BPlusTree::Remove(const KeyType &key) {
 			}
 			cursorl->key_num += rightNode->key_num;
 			cursorl->next_leaf = rightNode;
-			DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
+			/*DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
 			delete [] rightNode->keys;
 			delete [] rightNode->pointers;
-			delete rightNode;	
+			delete rightNode;*/	
 		}
 
 	}
@@ -625,4 +625,55 @@ void BPlusTree::DeleteInternal(const KeyType &key, InternalNode *parent, Interna
  * nodes until meet the key_end position, fetch all the records.
  */
 void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
-                          std::vector<RecordPointer> &result) {}
+                          std::vector<RecordPointer> &result) {
+	//Start Here
+	       if(!root || root ==NULL){
+                return;
+           }
+
+        //If tree is not empty
+
+        else{
+                InternalNode *cursor = (InternalNode*)root;
+		//Search the leaf node where to  closest key to key_start is.
+                while(cursor->is_leaf == false){
+                        for(int i=0;i<cursor->key_num;i++){
+                                if(key_start<cursor->keys[i]){
+                                        cursor = (InternalNode*)cursor->children[i];
+                                //      cursor = cursor->children[i];
+                                        break;
+                                }
+                                if(i==cursor->key_num - 1){
+                                        cursor = (InternalNode*)cursor->children[i+1];
+                                        //cursor = cursor->children[i+1];
+                                        break;
+                                }
+
+                        }
+                }
+		int pos;  //postion to store index of key_start or element closest to key_start.
+		//Finding the position of key_start or element closest to key_start in leaf node.
+                LeafNode *leafCursor = (LeafNode*)cursor;
+                for(int i=0;i<leafCursor->key_num;i++){
+                        if(leafCursor->keys[i]>=key_start){
+                                pos = i;
+				break;
+                                }
+                }
+		//Storing all the records in the result vector till we reach key_end or element just lee than key_end
+		while(leafCursor!=NULL && leafCursor->keys[pos]<=key_end){
+			int j;
+			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<=key_end;j++){
+				result.push_back(leafCursor->pointers[j]);
+			}
+			//If end of the leaf node is reached, jump to next node if key_end is not reched
+			if(j==leafCursor->key_num || leafCursor->keys[j]>=key_end){
+				pos = 0;
+				leafCursor = leafCursor->next_leaf;
+			
+			}
+		}
+				
+        }
+
+}

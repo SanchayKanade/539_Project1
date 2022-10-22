@@ -27,7 +27,7 @@ int main() {
   }
 
   bool test1_success = true;
-  for (int i = 100; i < 104; i++) {
+  for (int i = 100; i < 107; i++) {
     RecordPointer one_record(i, i);
     if (!tree.Insert(i, one_record)) {
       test1_success = false;
@@ -39,7 +39,7 @@ int main() {
   }
 
   bool test2_success = true;
-  for (int i = 100; i < 104; i++) {
+  for (int i = 100; i < 107; i++) {
     RecordPointer one_record;
     tree.GetValue(i, one_record);
 //    cout<<"One record "<<one_record.page_id<<"\n";
@@ -50,16 +50,17 @@ int main() {
   if(!test2_success){
   cout << "ERROR: GetValue() test fail!" << endl;}
 
-  for (int i = 100; i < 500; i += 4) 
+  /*for (int i = 100; i < 500; i += 4) 
     tree.Remove(i);
 
   RecordPointer temp;
   if (tree.GetValue(100, temp) || tree.GetValue(204, temp)) {
     cout << "ERROR: Remove() test fail!" << endl;
-  }
+  }*/
 
   vector<RecordPointer> records;
   tree.RangeScan(100, 112, records);
+  cout<<records.size()<<endl;
   if (records.size() != 9) 
   {
     cout << "ERROR: RangeScan() test fail!" << endl;
