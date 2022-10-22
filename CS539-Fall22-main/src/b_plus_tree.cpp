@@ -52,11 +52,6 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) {
 		//cout<<"came out of while \n";
 		LeafNode *leafCursor = (LeafNode*)cursor;
 		for(int i=0;i<leafCursor->key_num;i++){
-			//cout<<leafCursor->key_num<<"\n";
-			//cout<<"Target value is "<<key<<" page_id "<<result.page_id<<"\n";
-			//cout<<"search value is "<<leafCursor->keys[i]<<" page_id "<<leafCursor->pointers[i].page_id<<"\n";
-				
-		//	if(leafCursor->keys[i]==key && leafCursor->pointers[i].page_id==result.page_id && leafCursor->pointers[i].record_id==result.record_id){
 			if(leafCursor->keys[i]==key){
 				result.page_id=leafCursor->pointers[i].page_id;
 				//cout<<result.page_id;
@@ -64,14 +59,9 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) {
 				}
 			}
 		
-	        //cout<<"Returning false";	
 		return false;	
 	}
-
-	
-	
 	return false; 
-
 }
 
 /*****************************************************************************
@@ -84,21 +74,14 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) {
  * keys return false, otherwise return true.
  */
 bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) { 
-RecordPointer one_record;
-if(GetValue(key, one_record)){
+	//To check if duplicate value is being inserted.
+	RecordPointer one_record;
+	if(GetValue(key, one_record)){
 		return false;
-		}
+	}
 	
 	/*if tree is empty*/
 	if(IsEmpty()){
-		/*root = new Node(false);
-		LeafNode *temp;
-		temp = new LeafNode;
-		temp->is_leaf = true;
-		temp->keys[0] = key;
-		temp->pointers[0] = value;
-		root->keys[0] = key;
-		root->key_num = 1;*/
 
 		LeafNode *leafNode = new LeafNode();
 		leafNode->keys[0] = key;
@@ -108,14 +91,10 @@ if(GetValue(key, one_record)){
 		root = leafNode;
 
 		return true;
-		
-		
 
 	}
 	else{
-		//start here
 		//Leaf is present.Could be root.
-		//Node *cursor = root;
 		InternalNode *cursor = (InternalNode*)root;
 		InternalNode *parent;
 		while(cursor->is_leaf == false){
@@ -140,7 +119,7 @@ if(GetValue(key, one_record)){
 				i++;
 			}
 			for(int j = cursorl->key_num;j > i;j--){
-				cursorl->keys[j] = cursorl->keys[j-1]; //shifting keys to right to amke space for new key
+				cursorl->keys[j] = cursorl->keys[j-1]; //shifting keys to right to make space for new key
 				cursorl->pointers[j] = cursorl->pointers[j-1]; //shifting records to make space for new record
 
 			}
@@ -211,9 +190,7 @@ if(GetValue(key, one_record)){
 		}
 	
 	}
-
-
-
+cout<<root->keys[0]<<endl;
 return true;
 }
 
@@ -246,7 +223,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 	else{
 		InternalNode *internalNode = new InternalNode();
 		KeyType tempKey[MAX_FANOUT]; //temp array to store keys of parent
-		InternalNode *tempPtr[MAX_FANOUT+1]; //temp array to store pointers of parents
+		Node *tempPtr[MAX_FANOUT+1]; //temp array to store pointers of parents
 		for(int i=0; i<MAX_FANOUT-1;i++){
 			tempKey[i] = cursor->keys[i]; // copying keys
 		}
@@ -257,19 +234,19 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		while(key > tempKey[i] && i<MAX_FANOUT-1){
 			i++;           //finding place for child key to go
 		}
-		for(int j = MAX_FANOUT; j>i; j--){
+		for(int j = MAX_FANOUT-1; j>i; j--){
 			tempKey[j] = tempKey[j-1]; //shifting other keys to make value for new key
 
 		}
 		tempKey[i] = key; //Inserting new key in its place
-		for(int j = MAX_FANOUT+1;j>i+1; j--){
+		for(int j = MAX_FANOUT;j>i+1; j--){
 			tempPtr[j] = tempPtr[j-1]; //shifting pointers to make space for child pointer
 		}
 		//Temp node is ready
 		tempPtr[i+1] = (InternalNode*)newLeaf; //inserting child pointer
 		internalNode->is_leaf = false;
 		cursor->key_num = (MAX_FANOUT)/2; //creating split point
-		internalNode->key_num = MAX_FANOUT - 1 + (MAX_FANOUT)/2; 
+		internalNode->key_num = MAX_FANOUT - (MAX_FANOUT)/2; 
 		for(i = 0, j = cursor->key_num; i<internalNode->key_num;i++, j++){
 			internalNode->keys[i] = tempKey[j]; //populating internalNode->keys[i] = tempKeys[j] from split point
 		} 
@@ -281,12 +258,13 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 			// if leaf is root node now we will copy leaf values to root
 			InternalNode *cursorR = (InternalNode*)cursor;
                         InternalNode *newInternalNode = new InternalNode();
-                        newInternalNode->keys[0] = newLeaf->keys[cursorR->key_num];
+                        newInternalNode->keys[0] = internalNode->keys[0];
                         newInternalNode->children[0] = cursorR;
                         newInternalNode->children[1] = internalNode;
                         newInternalNode->is_leaf = false;
                         newInternalNode->key_num = 1;
                         root = (Node*)newInternalNode;
+			//cout<<root->keys[0]<<endl;
 	
 		}
 		else{
