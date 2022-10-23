@@ -190,7 +190,10 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 		}
 	
 	}
-cout<<root->keys[0]<<endl;
+for(int i=0;i<root->key_num;i++){
+	cout<<root->keys[i]<<" ";
+}
+cout<<endl;
 return true;
 }
 
@@ -203,6 +206,7 @@ return true;
 /***************************************************************************/
 void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalNode *newLeaf){
 
+	//If intrenal node has space then just add the key
 	InternalNode *cursor = parent;
 	if(cursor->key_num < MAX_FANOUT-1){
 		int i = 0;
@@ -220,6 +224,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		cursor->key_num++;
 		cursor->children[i+1] = (InternalNode*)newLeaf;
 	}
+	//If internal node does not have space then we nee dto split internal node and create a new root
 	else{
 		InternalNode *internalNode = new InternalNode();
 		KeyType tempKey[MAX_FANOUT]; //temp array to store keys of parent
@@ -246,11 +251,11 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 		tempPtr[i+1] = (InternalNode*)newLeaf; //inserting child pointer
 		internalNode->is_leaf = false;
 		cursor->key_num = (MAX_FANOUT)/2; //creating split point
-		internalNode->key_num = MAX_FANOUT - (MAX_FANOUT)/2; 
-		for(i = 0, j = cursor->key_num; i<internalNode->key_num;i++, j++){
+		internalNode->key_num = MAX_FANOUT - (MAX_FANOUT)/2 - 1; 
+		for(i = 0, j = cursor->key_num+1; i<internalNode->key_num && j<MAX_FANOUT;i++, j++){
 			internalNode->keys[i] = tempKey[j]; //populating internalNode->keys[i] = tempKeys[j] from split point
 		} 
-		for(i=0, j=cursor->key_num;i<internalNode->key_num+1;i++, j++){
+		for(i=0, j=cursor->key_num+1;i<internalNode->key_num+1;i++, j++){
 			internalNode->children[i]=(InternalNode*)tempPtr[j];
 		}
 
@@ -258,7 +263,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 			// if leaf is root node now we will copy leaf values to root
 			InternalNode *cursorR = (InternalNode*)cursor;
                         InternalNode *newInternalNode = new InternalNode();
-                        newInternalNode->keys[0] = internalNode->keys[0];
+                        newInternalNode->keys[0] = tempKey[MAX_FANOUT/2];
                         newInternalNode->children[0] = cursorR;
                         newInternalNode->children[1] = internalNode;
                         newInternalNode->is_leaf = false;
