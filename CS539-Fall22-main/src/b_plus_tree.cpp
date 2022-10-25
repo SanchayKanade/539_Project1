@@ -445,17 +445,18 @@ void BPlusTree::Remove(const KeyType &key) {
 		}
 		if(leftSib >=0){
 			LeafNode *leftNode = (LeafNode*)parent->children[leftSib];
+			
 			for(int i = leftNode->key_num, j=0; j< cursorl->key_num; i++,j++){
 				leftNode->keys[i] = cursorl->keys[j];
 				leftNode->pointers[i] = cursorl->pointers[j];
 			}
 			leftNode->key_num += cursorl->key_num;
-			leftNode->next_leaf = cursorl;
+			leftNode->next_leaf = cursorl->next_leaf;
 			DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
-
+			cursorl->key_num = 0;
 			/*delete[] cursorl->keys;
-			delete[] cursorl->pointers;
-			delete cursor;*/
+			delete[] cursorl->pointers;*/
+			delete cursor;
 		}
 		else if(rightSib<=parent->key_num){
 			LeafNode *rightNode = (LeafNode*)parent->children[rightSib];
@@ -464,11 +465,13 @@ void BPlusTree::Remove(const KeyType &key) {
 				cursorl->pointers[i] = rightNode->pointers[j];
 			}
 			cursorl->key_num += rightNode->key_num;
-			cursorl->next_leaf = rightNode;
+			cursorl->next_leaf = rightNode->prev_leaf;
 			DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
+			rightNode->key_num = 0;
 			/*delete [] rightNode->keys;
-			delete [] rightNode->pointers;
-			delete rightNode;	*/
+			delete [] rightNode->pointers;*/
+			delete rightNode;
+
 		}
 
 	}
@@ -659,11 +662,13 @@ void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
 		while(leafCursor!=NULL && leafCursor->keys[pos]<=key_end){
 			int j;
 			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<=key_end;j++){
+				//cout<<"Pushing"<<endl;
 				result.push_back(leafCursor->pointers[j]);
 				cout<<leafCursor->keys[j]<<endl;
 			}
 			//If end of the leaf node is reached, jump to next node if key_end is not reached
 			if(j==leafCursor->key_num || leafCursor->keys[j]>=key_end){
+				cout<<"Pushing"<<endl;
 				pos = 0;
 				leafCursor = leafCursor->next_leaf;
 			
