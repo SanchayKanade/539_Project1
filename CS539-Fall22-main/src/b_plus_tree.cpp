@@ -167,8 +167,17 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 				newLeaf->pointers[i] = tempPtr[j];
 			}
 			//To link two leaf nodes together
-			cursorl->next_leaf = newLeaf;
-			newLeaf->prev_leaf = cursorl;
+			if(cursorl->next_leaf == NULL){
+				cursorl->next_leaf = newLeaf;
+				newLeaf->prev_leaf = cursorl;
+			}
+			//If the new leaf lies in the middle of two leaf nodes.
+			else{
+				LeafNode *temp = cursorl->next_leaf;
+				cursorl->next_leaf = newLeaf;
+				newLeaf->prev_leaf = cursorl;
+				newLeaf->next_leaf = temp;
+			}
 
 			//If cursor is the leaf and root node
 			//Node *cursorR = (Node*)cursorl;
@@ -263,6 +272,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 			// if leaf is root node now we will copy leaf values to root
 			InternalNode *cursorR = (InternalNode*)cursor;
                         InternalNode *newInternalNode = new InternalNode();
+			//The value which needs to be pushed up in the root node is at the split point of the tempKey.
                         newInternalNode->keys[0] = tempKey[MAX_FANOUT/2];
                         newInternalNode->children[0] = cursorR;
                         newInternalNode->children[1] = internalNode;
@@ -287,7 +297,7 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
 /*Finds parent node for a given child node with a particular key
  *Author : Sanchay Kanade (sk2656)
  *Date Created : 10/19/2022*/
-
+/*****************************************************************************/
 
 InternalNode* BPlusTree::FindParent(Node *root, InternalNode *cursor){
 	InternalNode *parent;
@@ -338,9 +348,10 @@ void BPlusTree::Remove(const KeyType &key) {
 	}
 	//If the key is present
 	else{
+		cout<<"came here for "<<key<<endl;
 		InternalNode *cursor = (InternalNode*) root;
 		InternalNode *parent;
-		KeyType leftSib, rightSib;  //declaring left and right siblings
+		KeyType leftSib, rightSib;  //declaring left and right siblings chage eky type to int.
 		//Implementing search logic
 		while(cursor->is_leaf == false){
 			for(int i =0; i<cursor->key_num; i++){
@@ -371,7 +382,7 @@ void BPlusTree::Remove(const KeyType &key) {
 				break;
 			}
 		}
-		for(int i=pos; i<cursorl->key_num; i++){
+		for(int i=pos; i+1<cursorl->key_num; i++){ //if key marked for deleteion is the last element of leaf
 			cursorl->keys[i] = cursorl->keys[i+1];
 			cursorl->pointers[i] = cursorl->pointers[i+1];
 		}
@@ -382,9 +393,9 @@ void BPlusTree::Remove(const KeyType &key) {
 			//}
 			//No nodes left in the tree after removal
 			if(cursorl->key_num == 0){
-				delete[] cursorl->keys;
-				delete[] cursorl->pointers;
-				delete cursorl;
+				//delete[] cursorl->keys;
+				//delete[] cursorl->pointers;
+				//delete cursorl;
 				root = NULL;
 			}
 			return;
@@ -440,8 +451,9 @@ void BPlusTree::Remove(const KeyType &key) {
 			}
 			leftNode->key_num += cursorl->key_num;
 			leftNode->next_leaf = cursorl;
-			/*DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
-			delete[] cursorl->keys;
+			DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
+
+			/*delete[] cursorl->keys;
 			delete[] cursorl->pointers;
 			delete cursor;*/
 		}
@@ -453,10 +465,10 @@ void BPlusTree::Remove(const KeyType &key) {
 			}
 			cursorl->key_num += rightNode->key_num;
 			cursorl->next_leaf = rightNode;
-			/*DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
-			delete [] rightNode->keys;
+			DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
+			/*delete [] rightNode->keys;
 			delete [] rightNode->pointers;
-			delete rightNode;*/	
+			delete rightNode;	*/
 		}
 
 	}
@@ -473,23 +485,23 @@ void BPlusTree::DeleteInternal(const KeyType &key, InternalNode *parent, Interna
 	if(parent == (InternalNode*)root){
 		if(parent->key_num ==1){
 			if(parent->children[1] ==child){
-				delete[] child->keys;
-				delete[] child->children;
-				delete child;
+				//delete[] child->keys;
+				//delete[] child->children;
+				//delete child;
 				root = (Node*)parent->children[0];
-				delete[] parent->keys;
-				delete[] parent->children;
-				delete parent;
+				//delete[] parent->keys;
+				//delete[] parent->children;
+				//delete parent;
 				return;
 			}
 			else if(parent->children[0]==child){
-				delete[] child->keys;
-				delete[] child->children;
-				delete child;
+				//delete[] child->keys;
+				//delete[] child->children;
+				//delete child;
 				root = (Node*)parent->children[1];
-				delete[] parent->keys;
-				delete[] parent->children;
-				delete parent;
+				//delete[] parent->keys;
+				//delete[] parent->children;
+				//delete parent;
 				return;
 				
 			}
@@ -648,14 +660,16 @@ void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
 			int j;
 			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<=key_end;j++){
 				result.push_back(leafCursor->pointers[j]);
+				cout<<leafCursor->keys[j]<<endl;
 			}
-			//If end of the leaf node is reached, jump to next node if key_end is not reched
+			//If end of the leaf node is reached, jump to next node if key_end is not reached
 			if(j==leafCursor->key_num || leafCursor->keys[j]>=key_end){
 				pos = 0;
 				leafCursor = leafCursor->next_leaf;
 			
 			}
 		}
+		
 				
         }
 
