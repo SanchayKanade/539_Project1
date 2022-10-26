@@ -180,7 +180,6 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 			}
 
 			//If cursor is the leaf and root node
-			//Node *cursorR = (Node*)cursorl;
 			if(cursorl == root){
 				
 				InternalNode *newRoot = new InternalNode();
@@ -373,12 +372,10 @@ void BPlusTree::Remove(const KeyType &key) {
 		//we have reached leaf
 		LeafNode* cursorl = (LeafNode*)cursor;
 		//Find the position for the key in that node
-		bool found = false;
 		int pos;
 		//Find position of search key in the keys of leaf node
 		for(pos=0; pos<cursorl->key_num; pos++){
 			if(cursorl->keys[pos] == key){
-				found = true;
 				break;
 			}
 		}
@@ -388,13 +385,8 @@ void BPlusTree::Remove(const KeyType &key) {
 		}
 		cursorl->key_num--;
 		if(cursorl == (LeafNode*)root){
-			//for(int i=0; i<MAX_FANOUT;i++){
-			//	cursor->children[i] = NULL;
-			//}
 			//No nodes left in the tree after removal
 			if(cursorl->key_num == 0){
-				//delete[] cursorl->keys;
-				//delete[] cursorl->pointers;
 				//delete cursorl;
 				root = NULL;
 			}
@@ -408,19 +400,16 @@ void BPlusTree::Remove(const KeyType &key) {
 		}
 		if(leftSib >= 0){
 			LeafNode *leftNode = (LeafNode*)parent->children[leftSib]; //this is a pointer to the left left node of cursorl. could be optimized
-			if(leftNode->key_num >= (MAX_FANOUT)/2 + 1){
+			if(leftNode->key_num >= (MAX_FANOUT)/2 + 1){// if left node is full
 				for(int i=cursorl->key_num; i>0; i--){
 					cursorl->keys[i] = cursorl->keys[i-1]; //copying key to right
 					cursorl->pointers[i] = cursorl->pointers[i-1];
 				}
 				cursorl->key_num++;
-				//cursorl->children[cursor->key_num] = cursor->children[cursor->key_num - 1];
-				//cursorl->children[cursor->key_num -1] = NULL;
 				//Pushing greatest value of left sibling
 				cursorl->keys[0] = leftNode->keys[leftNode->key_num -1];
 				leftNode->key_num--;
 				leftNode->next_leaf = cursorl;
-				//leftNode->children[leftNode->key_num + 1] = NULL;
 				parent->keys[leftSib] = cursorl->keys[0];
 				return;
 			}
@@ -443,7 +432,7 @@ void BPlusTree::Remove(const KeyType &key) {
 
 			
 		}
-		if(leftSib >=0){
+		if(leftSib >=0){  //merge case
 			LeafNode *leftNode = (LeafNode*)parent->children[leftSib];
 			
 			for(int i = leftNode->key_num, j=0; j< cursorl->key_num; i++,j++){
@@ -454,8 +443,6 @@ void BPlusTree::Remove(const KeyType &key) {
 			leftNode->next_leaf = cursorl->next_leaf;
 			DeleteInternal(parent->keys[leftSib], parent, (InternalNode*)cursorl);
 			cursorl->key_num = 0;
-			/*delete[] cursorl->keys;
-			delete[] cursorl->pointers;*/
 			delete cursor;
 		}
 		else if(rightSib<=parent->key_num){
@@ -468,8 +455,6 @@ void BPlusTree::Remove(const KeyType &key) {
 			cursorl->next_leaf = rightNode->prev_leaf;
 			DeleteInternal(parent->keys[rightSib -1], parent, (InternalNode*)rightNode);
 			rightNode->key_num = 0;
-			/*delete [] rightNode->keys;
-			delete [] rightNode->pointers;*/
 			delete rightNode;
 
 		}
@@ -488,22 +473,14 @@ void BPlusTree::DeleteInternal(const KeyType &key, InternalNode *parent, Interna
 	if(parent == (InternalNode*)root){
 		if(parent->key_num ==1){
 			if(parent->children[1] ==child){
-				//delete[] child->keys;
-				//delete[] child->children;
 				//delete child;
 				root = (Node*)parent->children[0];
-				//delete[] parent->keys;
-				//delete[] parent->children;
 				//delete parent;
 				return;
 			}
 			else if(parent->children[0]==child){
-				//delete[] child->keys;
-				//delete[] child->children;
 				//delete child;
 				root = (Node*)parent->children[1];
-				//delete[] parent->keys;
-				//delete[] parent->children;
 				//delete parent;
 				return;
 				
