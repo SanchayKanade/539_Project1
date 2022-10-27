@@ -93,6 +93,13 @@ class BPlusTree {
 
   //Helps in deleting internal node and balancing tree
   void DeleteInternal(const KeyType &key, InternalNode *parent, InternalNode *child);
+
+  //Implements searching of keys in log(n) time in leaf and internal nodes ratehr than linear
+  int BinarySearch(const KeyType arr[], const int &low, const int &high, const KeyType &key);
+
+  // Implements a modified version of binary serach to identify location key with respect to internal nodes's keys array
+  int ModifiedBinarySearch(const KeyType arr[], const int &low, const int &high, const KeyType &key);
+
  private:
   // pointer to the root node.
   Node *root;

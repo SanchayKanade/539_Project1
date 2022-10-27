@@ -1,5 +1,5 @@
 #include "include/b_plus_tree.h"
-#include <iostream>
+//#include <iostream>
 
 /*
  * Helper function to decide whether current b+tree is empty
@@ -10,6 +10,60 @@ bool BPlusTree::IsEmpty() const {
 	}
 	return false; 
 }
+
+/****************************************************************************
+ * BINARY SEARCH HELPER FUNCTION
+ * **************************************************************************
+ * Binary search logic to replace linear searching of keys in leaf or internal nodes
+ ** Author : Sanchay Kanade (sk2656)
+ * Date Created : 10/26/2022*/
+/****************************************************************************/
+int BPlusTree::BinarySearch(const KeyType arr[], const int &low, const int &high, const KeyType &key){
+	if(high>=low){
+		int mid = low + (high-low)/2;
+
+		if(arr[mid] == key){
+			return mid;
+		}
+		if(arr[mid]>key){
+			return BinarySearch(arr, low, mid-1, key);
+		}
+		else{
+			return BinarySearch(arr, mid+1, high, key);
+		}
+	}
+	return -1;
+
+}
+
+/****************************************************************************
+ * MODIFIED BINARY SEARCH HELPER FUNCTION
+ * **************************************************************************
+ * Binary search logic to replace linear searching of keys in leaf or internal nodes
+ ** Author : Sanchay Kanade (sk2656)
+ * Date Created : 10/26/2022*/
+/****************************************************************************/
+int BPlusTree::ModifiedBinarySearch(const KeyType arr[], const int &low, const int &high, const KeyType &key){
+        int l = low;
+	int h = high;
+        int mid =0;	
+	while(l<=h){
+                mid = l + (h-l)/2;
+
+                if(arr[mid] == key){
+                        return mid;
+                }
+                if(key<arr[mid]){
+                        h = mid-1;
+                }
+                else{
+                        l = mid+1;
+                }
+        }
+        return l;
+
+}
+
 
 /*****************************************************************************
  * SEARCH
@@ -24,34 +78,66 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) {
 	//If tree is empty there is no value to search
 	
 	if(!root || root ==NULL){          
-		//cout<<"Root is empty";
 		return false;
            }
 
 	//If tree is not empty
 	
 	else{
-		//cout<<"starting else block";
 		InternalNode *cursor = (InternalNode*)root;
-		
 		while(cursor->is_leaf == false){
+			/*int pos = ModifiedBinarySearch(cursor->keys, 0, cursor->key_num-1, key);
+			//cout<<"pos is"<<pos<<endl;
+				if(cursor->key_num==1 && key>=cursor->keys[0]){
+					cout<<"This case 1 "<<pos;
+					cursor = (InternalNode*)cursor->children[1];
+				}
+				if(cursor->key_num==1 && key<cursor->keys[0]){
+					cout<<"This case 2 "<<pos;
+                                        cursor = (InternalNode*)cursor->children[0];
+				}
+				if(cursor->key_num>1 && pos<cursor->key_num){
+					cout<<cursor->key_num<<"length of cursor";
+					cout<<"This case 3 "<<pos;
+                                        //cursor = (InternalNode*)cursor->children[pos];
+
+				}
+
+				if(cursor->key_num>1  && pos >= cursor->key_num){
+				cout<<"This case 4 "<<pos<<endl;
+					cursor = (InternalNode*)cursor->children[cursor->key_num];
+				}*/
+				/*if(pos == cursor->key_num-1 && key<cursor->keys[pos-1]){
+				//	cursor = (InternalNode*)cursor->children[pos-1];
+				//}*/
 			for(int i=0;i<cursor->key_num;i++){
 				if(key<cursor->keys[i]){
 					cursor = (InternalNode*)cursor->children[i];
-				//	cursor = cursor->children[i];
 					break;
 				}
 				if(i==cursor->key_num - 1){
 					cursor = (InternalNode*)cursor->children[i+1];
-					//cursor = cursor->children[i+1];
 					break;
 				}
 			
 			}
 		}
-		//cout<<"came out of while \n";
+		
+		//Now we are at leaf node. Using Binary search logic to search thorugh keys of a leaf node. Optimization for the case when Fan Out is large.
 		LeafNode *leafCursor = (LeafNode*)cursor;
-		for(int i=0;i<leafCursor->key_num;i++){
+		//pos stores the position of the key in the leafCursor keys.
+		int pos = BinarySearch(leafCursor->keys, 0, leafCursor->key_num-1, key);
+		if(pos == -1){
+			//Element is not found.
+			return false;
+		}
+		else{
+			//Found the element at pos
+			result.page_id=leafCursor->pointers[pos].page_id;
+			return true;
+		}
+
+		/*for(int i=0;i<leafCursor->key_num;i++){
 			if(leafCursor->keys[i]==key){
 				result.page_id=leafCursor->pointers[i].page_id;
 				//cout<<result.page_id;
@@ -59,7 +145,7 @@ bool BPlusTree::GetValue(const KeyType &key, RecordPointer &result) {
 				}
 			}
 		
-		return false;	
+		return false;	*/
 	}
 	return false; 
 }
@@ -97,8 +183,8 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 		//Leaf is present.Could be root.
 		InternalNode *cursor = (InternalNode*)root;
 		InternalNode *parent;
+		//Search logic starts
 		while(cursor->is_leaf == false){
-			//InternalNode *temp = (InternalNode*)cursor;
 			parent = cursor;
 			for(int i = 0;i<cursor->key_num;i++){
 				if(key<cursor->keys[i]){
@@ -111,6 +197,7 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 				}
 			}
 		}
+		//search logic ends
 		//Case where leaf node has space left
 		LeafNode *cursorl = (LeafNode*)cursor;
 		if(cursorl->key_num < MAX_FANOUT-1){
@@ -198,10 +285,10 @@ bool BPlusTree::Insert(const KeyType &key, const RecordPointer &value) {
 		}
 	
 	}
-for(int i=0;i<root->key_num;i++){
-	cout<<root->keys[i]<<" ";
-}
-cout<<endl;
+//for(int i=0;i<root->key_num;i++){
+	//cout<<root->keys[i]<<" ";
+//}
+//cout<<endl;
 return true;
 }
 
@@ -278,7 +365,6 @@ void BPlusTree::FillInternal(const KeyType &key, InternalNode *parent, InternalN
                         newInternalNode->is_leaf = false;
                         newInternalNode->key_num = 1;
                         root = (Node*)newInternalNode;
-			//cout<<root->keys[0]<<endl;
 	
 		}
 		else{
@@ -321,10 +407,6 @@ InternalNode* BPlusTree::FindParent(Node *root, InternalNode *cursor){
  } 
 
 
-
-
-
-
 /*****************************************************************************
  * REMOVE
  *****************************************************************************/
@@ -347,7 +429,7 @@ void BPlusTree::Remove(const KeyType &key) {
 	}
 	//If the key is present
 	else{
-		cout<<"came here for "<<key<<endl;
+		//cout<<"came here for "<<key<<endl;
 		InternalNode *cursor = (InternalNode*) root;
 		InternalNode *parent;
 		KeyType leftSib, rightSib;  //declaring left and right siblings chage eky type to int.
@@ -372,7 +454,7 @@ void BPlusTree::Remove(const KeyType &key) {
 		//we have reached leaf
 		LeafNode* cursorl = (LeafNode*)cursor;
 		//Find the position for the key in that node
-		int pos;
+		int pos=0;
 		//Find position of search key in the keys of leaf node
 		for(pos=0; pos<cursorl->key_num; pos++){
 			if(cursorl->keys[pos] == key){
@@ -387,7 +469,7 @@ void BPlusTree::Remove(const KeyType &key) {
 		if(cursorl == (LeafNode*)root){
 			//No nodes left in the tree after removal
 			if(cursorl->key_num == 0){
-				//delete cursorl;
+				delete cursorl;
 				root = NULL;
 			}
 			return;
@@ -473,15 +555,15 @@ void BPlusTree::DeleteInternal(const KeyType &key, InternalNode *parent, Interna
 	if(parent == (InternalNode*)root){
 		if(parent->key_num ==1){
 			if(parent->children[1] ==child){
-				//delete child;
+				delete child; //deleting child and parent so that the node doesn't get traversed
 				root = (Node*)parent->children[0];
-				//delete parent;
+				delete parent;
 				return;
 			}
 			else if(parent->children[0]==child){
-				//delete child;
+				delete child;
 				root = (Node*)parent->children[1];
-				//delete parent;
+				delete parent;
 				return;
 				
 			}
@@ -615,12 +697,10 @@ void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
                         for(int i=0;i<cursor->key_num;i++){
                                 if(key_start<cursor->keys[i]){
                                         cursor = (InternalNode*)cursor->children[i];
-                                //      cursor = cursor->children[i];
                                         break;
                                 }
                                 if(i==cursor->key_num - 1){
                                         cursor = (InternalNode*)cursor->children[i+1];
-                                        //cursor = cursor->children[i+1];
                                         break;
                                 }
 
@@ -639,13 +719,12 @@ void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
 		while(leafCursor!=NULL && leafCursor->keys[pos]<=key_end){
 			int j;
 			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<=key_end;j++){
-				//cout<<"Pushing"<<endl;
 				result.push_back(leafCursor->pointers[j]);
-				cout<<leafCursor->keys[j]<<endl;
+				//cout<<leafCursor->keys[j]<<endl;
 			}
 			//If end of the leaf node is reached, jump to next node if key_end is not reached
 			if(j==leafCursor->key_num || leafCursor->keys[j]>=key_end){
-				cout<<"Pushing"<<endl;
+				//cout<<"Pushing"<<endl;
 				pos = 0;
 				leafCursor = leafCursor->next_leaf;
 			

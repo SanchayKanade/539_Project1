@@ -37,9 +37,12 @@ int main() {
   if (!test1_success || tree.IsEmpty()) {
     cout << "ERROR: Insert() test fail!" << endl;
   }
+  else{
+  	cout<<"Insert Test passed";
+  }
 
   bool test2_success = true;
-  for (int i = 100; i < 500; i++) {
+  for (int i = 110; i < 111; i++) {
     RecordPointer one_record;
     tree.GetValue(i, one_record);
 //    cout<<"One record "<<one_record.page_id<<"\n";
@@ -50,6 +53,9 @@ int main() {
   if(!test2_success){
 	  //cout<<"1st one";
   cout << "ERROR: GetValue() test fail!" << endl;}
+  else{
+  	cout<<"GetValue() test passed";
+  }
 
   for (int i = 100; i < 500; i += 4) 
     tree.Remove(i);
