@@ -685,7 +685,8 @@ void BPlusTree::RangeScan(const KeyType &key_start, const KeyType &key_end,
 		//Storing all the records in the result vector till we reach key_end or element just lee than key_end
 		while(leafCursor!=NULL && leafCursor->keys[pos]<=key_end){
 			int j;
-			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<=key_end;j++){
+			//Not including key_end
+			for(j=pos; j<leafCursor->key_num && leafCursor->keys[j]<key_end;j++){
 				result.push_back(leafCursor->pointers[j]);
 			}
 			//If end of the leaf node is reached, jump to next node if key_end is not reached
